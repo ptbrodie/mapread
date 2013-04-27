@@ -63,6 +63,22 @@ void init_root (int length)
 }
 
 
+void prepare_str (char *s) 
+// Prepare the string to be inserted into the tree.
+// Store its length and point input_string at it.
+{
+	input_string = s;
+	if (s[strlen(s) - 1] == '$') {	// User has already prepared string.
+		slen = strlen (s) - 1;
+	} else {						// String has not yet been prepared.
+		slen = strlen (s);
+		input_string [slen] = '$';
+		input_string [slen + 1] = 0;
+	}
+
+}
+
+
 void print_string_slice (char *s, int start, int end)
 // Print the slice of string s[start:end]
 {
@@ -194,11 +210,7 @@ void sorted_insert (struct node **list, struct node *node)
 // to input_string[node -> starti].
 {
 	struct node **curr = list;
-	if (input_string[node -> starti] == '$') {	// put $ at the end of list
-		while (*curr) {
-			curr = &((*curr) -> rightsib);
-		}
-	} else {
+	if (!(input_string[node -> starti] == '$')) {	// put $ at the start of list
 		while (*curr && input_string[(*curr) -> starti] < input_string[node -> starti]) {
 			curr = &((*curr) -> rightsib);
 		}
@@ -466,13 +478,18 @@ struct node* insert_suffix (int index, struct node *tree, struct node **lastleaf
 }
 
 
-void build_tree (char *s, char *alphabet)
+struct node *build_tree (char *s, char *alphabet)
 // Build a suffix tree for the given string over the given alphabet
 // using McCreight's Suffix Link algorithm.
 {
 	int index = 1;
-	struct node *subtree = root, *lastleaf;
+	struct node *lastleaf;
 	idCnt = 1;
+	
+	// NEED SOME PREPARE STRING CODE HERE.
+		// get string length, assign input_string to s, append '$', etc.
+		// SEE SUFFIX USER CODE FOR WHAT TO DO.
+	prepare_str (s);
 	if (s) {
 		init_root (slen);
 		if (slen > 0) {
@@ -484,6 +501,7 @@ void build_tree (char *s, char *alphabet)
 			}
 		}
 	}
+	return root;
 }
 
 

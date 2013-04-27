@@ -13,7 +13,13 @@
 #include "../iosrc/fileio.h"
 
 
+#define LAMBDA				25
+#define READ_LENGTH			512
+#define	NAME_LENGTH			256
 
+// References the next index to insert into during the recursive
+// preparation of the tree.
+int nextindex;
 
 
 

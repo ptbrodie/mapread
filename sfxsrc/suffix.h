@@ -40,6 +40,8 @@ struct node {
 	int strdepth;	// Path length in characters from root to this node.
 	int starti;		// First index in slice of input_string stored by this node
 	int endi;		// Last+1 index in slice of input_string stored by this node
+	int array_start;			// First index of leaf array range that marks this node's leaves.
+	int array_end;				// Last index of leaf array range that marks this node's leaves.
 	struct node *sfxlink;		// Pointer to this node's suffix link
 	struct node *leftchild;		// Pointer to first child (sorted alphabetically)
 	struct node *rightsib;		// Pointer to next sibling (sorted alphabetically)
@@ -60,7 +62,7 @@ int numleaves, numints; 	// For counting leaves and internal nodes.
 // ================================
 
 // Build a suffix tree from the given string over the given alphabet.
-void build_tree (char*, char*);
+struct node *build_tree (char*, char*);
 // Free the memory allocated to a suffix tree.
 void free_tree (struct node*);
 // Print the children of the given node.
