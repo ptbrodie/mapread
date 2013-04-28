@@ -20,6 +20,8 @@ void allocate_node (struct node **node, int sufnum, int starti,
 	(*node) -> strdepth = parent -> strdepth + endi - starti;
 	(*node) -> starti = starti;
 	(*node) -> endi = endi;
+	(*node) -> array_start = -1;
+	(*node) -> array_end = -1;
 	(*node) -> sfxlink = NULL;
 	(*node) -> leftchild = NULL;
 	(*node) -> rightsib = NULL;
@@ -496,9 +498,6 @@ struct node *build_tree (char *s, char *alphabet)
 	struct node *lastleaf;
 	idCnt = 1;
 	
-	// NEED SOME PREPARE STRING CODE HERE.
-		// get string length, assign input_string to s, append '$', etc.
-		// SEE SUFFIX USER CODE FOR WHAT TO DO.
 	prepare_str (s);
 	if (s) {
 		init_root (slen);

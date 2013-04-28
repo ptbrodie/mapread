@@ -48,7 +48,7 @@ typedef struct report_q {
 
 // ============================================================================
 
-int align_loc (char*,char*);
+int align_loc (char*,char*,int*);
 
 
 

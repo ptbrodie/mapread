@@ -16,25 +16,25 @@
 int *init_leafarray (int length)
 // Allocate an array size of length and initialize it to hold -1s.
 {
-	int i;
+	int i, *leaves;
 
 	// Allocate array.
-	leafarray = (int*) malloc (sizeof (int) * (length));
-	if (!leafarray) {
+	leaves = (int*) malloc (sizeof (int) * (length));
+	if (!leaves) {
 		perror ("Unable to allocate leaf array");
 		exit (1);
 	}
 
 	// Initialize array to hold all -1s
 	for (i = 0; i < length; ++i) {
-		leafarray[i] = -1;
+		leaves[i] = -1;
 	}
 
-	return leafarray;
+	return leaves;
 }	
 
 
-void prepare_tree_DFS (struct node *tree, int *leafarray)
+void prepare_tree_DFS (struct node *tree)
 // Perform a Depth-First traversal of the given tree, populating
 // the leaf array and marking each internal node's leaf list as the
 // interval [leafarray[node->array_start], leafarray[node->array_end]).
@@ -47,10 +47,11 @@ void prepare_tree_DFS (struct node *tree, int *leafarray)
 			tree -> array_end = nextindex;
 			++nextindex;
 		} else {						// internal node case
+
 			// Recursively visit all children from left to right.
 			curr = tree -> leftchild;
 			while (curr) {
-				prepare_tree_DFS (curr, leafarray);
+				prepare_tree_DFS (curr);
 				if (!(curr -> rightsib)) {	// Remember rightmost child.
 					rightchild = curr;
 				}
@@ -66,7 +67,7 @@ void prepare_tree_DFS (struct node *tree, int *leafarray)
 }	
 
 
-int *prepare_tree (struct node *tree)
+void prepare_tree (struct node *tree)
 // Prepare the suffix tree for the read mapping.
 {
 	// Allocate an array the length of the input genome
@@ -74,9 +75,7 @@ int *prepare_tree (struct node *tree)
 
 	// Perform a depth-first traversal of the tree recording the leaf list
 	// of each node visited, and marking each leaf in the leafarray.
-	prepare_tree_DFS (tree, leafarray);
-
-	return leafarray;
+	prepare_tree_DFS (tree);
 }
 
 
@@ -123,7 +122,9 @@ struct node *find_loc_BF (struct node *tree, char *read)
 			// Exiting loop means a mismatch was seen.
 			if (matches > LAMBDA && matches > maxmatches) {
 				maxmatches = matches;
-				deepest = parent;
+				if (!curr) deepest = parent;
+				else deepest = curr;
+				printf ("Saw %d matches, assigning deepest = %d\n", maxmatches, deepest -> id);
 			}
 		}
 		++read; --readlen; matches = 0;
@@ -179,7 +180,7 @@ void retrieve_substring (char *substr, int start, int end)
 {
 	int i;
 	char *cp;
-	//printf ("start = %d, end = %d, len = %d\n", start, end, end-start+1);
+	printf ("start = %d, end = %d, len = %d\n", start, end, end-start+1);
 	if (start < 0) start = 0;
 	if (end > slen) end = slen;
 	cp = substr;
@@ -194,9 +195,10 @@ void map_reads (struct node *tree, const char *readfile)
 // Map the reads one-by-one onto the genome.
 {
 	char read[READ_LENGTH], readname[NAME_LENGTH], gslice[READ_LENGTH];
+	int i = 1, j, readlen, score, comp, matchalign[2];
 	struct node *bfres;
 	FILE *fp;
-	int i = 1, j, readlen, score;
+	
 
 	fp = open_file_read (readfile);
 	fp = get_next_read (read, readname, fp);
@@ -211,8 +213,10 @@ void map_reads (struct node *tree, const char *readfile)
 			//printf ("LEAF = %d\n", j);
 			//printf ("read = %s\n", read);
 			//printf ("slice = %s\n", gslice);
-			score = align_loc (gslice, read);
-			//printf ("score = %d\n", score);
+			score = align_loc (gslice, read, matchalign);
+			printf ("local align len = %d, #matches = %d\n", matchalign[0], matchalign[1]);
+			comp = bf_align (gslice, read);
+			printf ("BF found %d exact matching repeat\n", comp);
 		}
 		printf ("%d\n", i);
 		++i;
@@ -233,7 +237,7 @@ void exec_mapread (const char *genomefile, const char *readfile, const char *alp
 //	4.	Output
 {
 	char *alphabet, *genome, *name;
-	int *leafarray;
+	int i;
 	struct node *tree;
 
 
@@ -249,8 +253,12 @@ void exec_mapread (const char *genomefile, const char *readfile, const char *alp
 	//	2. Prepare the tree and record leaf lists.
 	printf ("Preparing suffix tree ....\n");
 	nextindex = 0;
-	leafarray = prepare_tree (tree);
-
+	prepare_tree (tree);
+	/*for (i = 0; i < slen + 1; ++i) {
+		printf ("%d ", leafarray[i]);
+	}
+	printf ("\n");
+	getchar ();*/
 	// 	3.  Map Reads onto Genome
 	printf ("Mapping reads ....\n");
 	map_reads (tree, readfile);

@@ -179,7 +179,7 @@ int calculate_table_loc (CELL ***table, int *maxi, int *maxj, char *s1, char *s2
 	int i, j, type, maxm = 0, score;
 	for (i = ilo + 1; i < ihi; ++i) {
 		for (j = jlo + 1; j < jhi; ++j) {
-			(*table)[i][j].sub = max (calc_t (&type, *table, i-1, j-1) + sub (s1[j-1], s2[i-1]), 0);
+			(*table)[i][j].sub = max (calc_t_loc (&type, *table, i-1, j-1) + sub (s1[j-1], s2[i-1]), 0);
 			(*table)[i][j].ins = max (max3 ((*table)[i][j-1].ins + GAP, 
 										(*table)[i][j-1].sub + HGAP + GAP,
 										(*table)[i][j-1].del + HGAP + GAP), 0);
@@ -209,7 +209,7 @@ int traceback_loc (int *match, int *mismatch, int *gap, int *hgap,
 
 	// Traverse the path from the optimal score to where it began, collecting
 	// symbols to represent it in a report and counting the penalty occurrences.
-	while (type >= 0 && (i > ilo_bnd || j > jlo_bnd) && score >= 0) {
+	while (type >= 0 && (i > ilo_bnd || j > jlo_bnd)) {
 		switch (type) {
 			case S:	// substitution
 				score = calc_t_loc (&type, table, i-1, j-1);
@@ -245,7 +245,7 @@ int traceback_loc (int *match, int *mismatch, int *gap, int *hgap,
 }
 
 
-int align_loc (char *s1, char *s2)
+int align_loc (char *s1, char *s2, int *matchalign)
 // Calculate the optimal local alignment for two strings s1 and s2.
 {
 	CELL **table;
@@ -266,14 +266,13 @@ int align_loc (char *s1, char *s2)
 		// Calculate the alignment between s1 and s2
 		init_table (&table, ilo, jlo, jhi + 1, ihi + 1, 'l');	
 		opt_score = calculate_table_loc (&table, &maxi, &maxj, s1, s2, ilo, jlo, ihi + 1, jhi + 1);
+		//print_table (table, n+1, m+1, s1, s2);
 		traceback_loc (&match, &mismatch, &gap, &hgap, table, 
 						maxi, maxj, &mini, &minj, ilo, jlo, s1, s2);
 
-		// ================== MAKE THIS RETURN MATCH AND ALIGN
 		alignlen = match + mismatch + gap + hgap;
-		identity = ((double)match / (double)alignlen) * 100;
-		printf ("alignlen = %d, match = %d, identity = %lf\n", alignlen, match, identity);
-		// ================================================
+		matchalign[0] = alignlen;
+		matchalign[1] = match;
 
 		// Clean up.
 		free_table (&table, n + 1, m + 1);
@@ -284,6 +283,54 @@ int align_loc (char *s1, char *s2)
 }
 
 
+int bf_align (char *s1, char *s2) {
+	int i, j, s1len, s2len;
+	int jsave, isave, match, max;
+	s1len = strlen (s1);
+	s2len = strlen (s2);
+	max = 0; match = 0;
+
+	for (i = 0; i < s1len; ++i) {
+
+		for (j = 0; j < s2len; ++j) {
+			if (s1[i] == s2[j]) {
+				jsave = j; isave = i;
+				while (s1[i++] == s2[j++]) match++;
+				if (match > max) max = match;
+				j = jsave; i = isave; match = 0;
+			}
+		}
+	}
+	return max;
+}
 
 
+
+/*Alignment Type: Local Affine Gap
+
+Scores:   Match:   1, Mismatch:  -1, H:  -5, G:  -1
+
+Sequence 1: "read1", length = 103 characters
+Sequence 2: "Peach_largeContig", length = 5362495 characters
+
+========== Local Alignment 1
+
+s1:712656  CAACTAAAGCCATGAATGTCTAATGATACAAATAAGACAGTACCCGCAGTCTCAAATATT  712715
+           ||||||||||||||||||||| ||||||||||||| ||||||||||||||||||||||||
+s2:     1  CAACTAAAGCCATGAATGTCTCATGATACAAATAAAACAGTACCCGCAGTCTCAAATATT  60
+
+s1:712716  TAGCCTAAGTTGCATAACAAGTTGGCTTCCATAATGAGAGACT  712758
+           ||||||||||||||||| |||||||||||||||||||||||||
+s2:    61  TAGCCTAAGTTGCATAAAAAGTTGGCTTCCATAATGAGAGACT  103
+
+Report: 
+
+Optimal alignment: 97
+
+Number of matches: 100
+Number of mismatches: 3
+Number of gaps: 0
+Number of entry gaps: 0
+Identity Percentage: 97.09
+Coverage Percentage: 100.00*/
 
