@@ -22,7 +22,6 @@ int MATCH, MISMATCH, HGAP, GAP;
 // INTERFACE PROTOTYPES
 
 
-
 void read_parms (const char*);
 void read_fasta (char**, char**, char*, const char*);
 void read_alphabet (char**, const char*);
