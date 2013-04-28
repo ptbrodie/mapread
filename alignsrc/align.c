@@ -187,7 +187,6 @@ int calculate_table_loc (CELL ***table, int *maxi, int *maxj, char *s1, char *s2
 										(*table)[i-1][j].sub + HGAP + GAP,
 										(*table)[i-1][j].ins + HGAP + GAP), 0);
 			score = calc_t_loc (&type, *table, i, j);
-			printf ("score = %d\n", score);
 			if (score > maxm) {
 				maxm = score; *maxi = i; *maxj = j;
 			}
@@ -210,7 +209,7 @@ int traceback_loc (int *match, int *mismatch, int *gap, int *hgap,
 
 	// Traverse the path from the optimal score to where it began, collecting
 	// symbols to represent it in a report and counting the penalty occurrences.
-	while (type >= 0 && (i > ilo_bnd || j > jlo_bnd) && score > 0) {
+	while (type >= 0 && (i > ilo_bnd || j > jlo_bnd) && score >= 0) {
 		switch (type) {
 			case S:	// substitution
 				score = calc_t_loc (&type, table, i-1, j-1);
@@ -252,7 +251,9 @@ int align_loc (char *s1, char *s2)
 	CELL **table;
 	int i, ilo, jlo, ihi, jhi, n, m, opt_score, maxi, maxj, mini, minj;
 	int match, mismatch, gap, hgap;
-
+	int alignlen;
+	double identity;
+	match = mismatch = gap = hgap = 0;
 	// Cannot align null strings.
 	if (s1 && s2) {
 		
@@ -267,6 +268,12 @@ int align_loc (char *s1, char *s2)
 		opt_score = calculate_table_loc (&table, &maxi, &maxj, s1, s2, ilo, jlo, ihi + 1, jhi + 1);
 		traceback_loc (&match, &mismatch, &gap, &hgap, table, 
 						maxi, maxj, &mini, &minj, ilo, jlo, s1, s2);
+
+		// ================== MAKE THIS RETURN MATCH AND ALIGN
+		alignlen = match + mismatch + gap + hgap;
+		identity = ((double)match / (double)alignlen) * 100;
+		printf ("alignlen = %d, match = %d, identity = %lf\n", alignlen, match, identity);
+		// ================================================
 
 		// Clean up.
 		free_table (&table, n + 1, m + 1);

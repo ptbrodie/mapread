@@ -17,6 +17,7 @@
 #define I 1 				// Insertion
 #define D 2 				// Deletion
 
+extern int MATCH, MISMATCH, HGAP, GAP;
 
 // Cells to make up the dynamic programming table.
 typedef struct DP_cell {
