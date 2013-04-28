@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+
 // =====================================================================
 
 #define INF (2 ^ 31 - 1)	// Infinity
@@ -16,8 +17,6 @@
 #define I 1 				// Insertion
 #define D 2 				// Deletion
 
-// Penalty values.
-int MATCH, MISMATCH, HGAP, GAP;
 
 // Cells to make up the dynamic programming table.
 typedef struct DP_cell {
@@ -48,6 +47,7 @@ typedef struct report_q {
 
 // ============================================================================
 
+int align_loc (char*,char*);
 
 
 

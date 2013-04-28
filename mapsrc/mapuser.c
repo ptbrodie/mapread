@@ -1,3 +1,5 @@
+// Author: Patrick Brodie
+
 // MAIN BLOCK
 
 int main (int argc, char *argv[])

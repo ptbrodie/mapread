@@ -1,9 +1,4 @@
-
-// Patrick Brodie
-// CptS 471
-// <A.Kalyanaraman>
-// 3/20/13
-// PA2 - Suffix Tree / McCreight's Algorithm
+// Author: Patrick Brodie
 
 
 #include "suffix.h"
@@ -269,6 +264,21 @@ int identify_instype (struct node *u)
 	} else {
 		return (u -> parent == root)? IIB : IIA;
 	}
+}
+
+
+struct node *get_branch_by_match (char c, struct node *parent)
+// Search the children of the given parent node for the child whose label
+// begins with the given character c.  Return it when found, NULL if not found.
+{
+	struct node *branch = parent -> leftchild;
+	while (branch) {
+		if (c == input_string[branch -> starti]) {
+			break;
+		}
+		branch = branch -> rightsib;
+	}
+	return branch;
 }
 
 

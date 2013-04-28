@@ -1,4 +1,4 @@
-
+// Author: Patrick Brodie
 
 
 #include "fileio.h"
@@ -133,4 +133,43 @@ void read_parms (const char *filename)
 	}
 	fclose (fp);
 }
+
+
+FILE *open_file_read (const char *filename)
+// Return a pointer to the the open file filename.
+// Report error if unable to open.
+{
+        FILE *fp = NULL;
+        if ((fp = fopen (filename, "r")) == NULL) {
+                perror ("Error when opening file");
+                exit (1);
+        }
+        return fp;
+}
+
+
+FILE *get_next_read (char *read, char *readname, FILE *fp)
+// Record the next read in the file and return the updated file pointer.
+{
+	char *cp;
+	bzero (read, READ_LENGTH);
+	bzero (readname, NAME_LENGTH);
+
+	// TODO: THESE SHOULD BE CHECKED FOR EMPTY LINES.
+	if (fp) {
+		cp = fgets (readname, NAME_LENGTH, fp);
+		if (cp) readname[strlen(readname) - 1] = 0;
+		if (fp && cp) {
+			cp = fgets (read, READ_LENGTH, fp);
+			if (cp) read[strlen(read) - 1] = 0;
+		} else {
+			fp = 0;
+		}
+	}
+
+	return fp;
+}
+
+
+
 

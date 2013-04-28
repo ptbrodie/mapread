@@ -1,3 +1,4 @@
+// Author: Patrick Brodie
 
 #ifndef MAPREAD_H_
 #define MAPREAD_H_
@@ -13,13 +14,17 @@
 #include "../iosrc/fileio.h"
 
 
+// MAX LENGTH OF READ is assumed to be 512 here.  In the future this parameter should be discovered by
+// A size file or by counting the number of characters on a line in the read file.
+
 #define LAMBDA				25
-#define READ_LENGTH			512
-#define	NAME_LENGTH			256
+
 
 // References the next index to insert into during the recursive
 // preparation of the tree.
 int nextindex;
+
+int *leafarray;
 
 
 

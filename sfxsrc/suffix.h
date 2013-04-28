@@ -1,8 +1,4 @@
-// Patrick Brodie
-// CS 471
-// <A.Kalyanaraman>
-// 3/23/13
-// PA2 - Suffix Trees / McCreight's Algorithm
+// Author: Patrick Brodie
 
 
 #ifndef SUFFIX_H_
@@ -61,8 +57,13 @@ int numleaves, numints; 	// For counting leaves and internal nodes.
 
 // ================================
 
+
+// Interface Prototypes ===========
+
 // Build a suffix tree from the given string over the given alphabet.
 struct node *build_tree (char*, char*);
+// Search the children of the given parent node for the branch that matches given char.
+struct node *get_branch_by_match (char, struct node*);
 // Free the memory allocated to a suffix tree.
 void free_tree (struct node*);
 // Print the children of the given node.
