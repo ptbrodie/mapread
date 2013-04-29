@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./mapread INPUTS/Peach_reference.fasta INPUTS/Peach_simulated_reads.fasta INPUTS/DNA_alphabet.txt

@@ -126,6 +126,22 @@ void init_table (CELL ***table, int ilo, int jlo, int cols, int rows, char align
 			(*table)[ilo][j].ins = 0;
 		(*table)[ilo][j].del = -1 * INF;
 	}
+	for (i = ilo + 1; i < rows; ++i) {
+		(*table)[i][cols].sub = -1 * INF;
+		(*table)[i][cols].ins = -1 * INF;
+		if (penalty)		// Local does not init with a penalty
+			(*table)[i][cols].del = HGAP + i * penalty;
+		else 
+			(*table)[i][cols].del = 0;
+	}
+	for (j = jlo + 1; j < cols; ++j) {
+		(*table)[rows][j].sub = -1 * INF;
+		if (penalty)		// Local does not init with a penalty
+			(*table)[rows][j].ins = HGAP + j * penalty;
+		else
+			(*table)[rows][j].ins = 0;
+		(*table)[rows][j].del = -1 * INF;
+	}
 }
 
 
@@ -245,10 +261,9 @@ int traceback_loc (int *match, int *mismatch, int *gap, int *hgap,
 }
 
 
-int align_loc (char *s1, char *s2, int *matchalign)
+int align_loc (char *s1, int s1len, char *s2, int *matchalign, CELL ***table)
 // Calculate the optimal local alignment for two strings s1 and s2.
 {
-	CELL **table;
 	int i, ilo, jlo, ihi, jhi, n, m, opt_score, maxi, maxj, mini, minj;
 	int match, mismatch, gap, hgap;
 	int alignlen;
@@ -257,17 +272,17 @@ int align_loc (char *s1, char *s2, int *matchalign)
 	// Cannot align null strings.
 	if (s1 && s2) {
 		
-		n = strlen (s1), m = strlen (s2);
+		n = s1len, m = strlen (s2);
 		ilo = 0; jlo = 0; ihi = m; jhi = n;
 
 		// Allocate an m+1 by n+1 table.
-		allocate_table(&table, n + 1, m + 1);
+		//allocate_table(&table, n + 1, m + 1);
 
 		// Calculate the alignment between s1 and s2
-		init_table (&table, ilo, jlo, jhi + 1, ihi + 1, 'l');	
-		opt_score = calculate_table_loc (&table, &maxi, &maxj, s1, s2, ilo, jlo, ihi + 1, jhi + 1);
+		init_table (table, ilo, jlo, jhi + 1, ihi + 1, 'l');	
+		opt_score = calculate_table_loc (table, &maxi, &maxj, s1, s2, ilo, jlo, ihi + 1, jhi + 1);
 		//print_table (table, n+1, m+1, s1, s2);
-		traceback_loc (&match, &mismatch, &gap, &hgap, table, 
+		traceback_loc (&match, &mismatch, &gap, &hgap, *table, 
 						maxi, maxj, &mini, &minj, ilo, jlo, s1, s2);
 
 		alignlen = match + mismatch + gap + hgap;
@@ -275,7 +290,7 @@ int align_loc (char *s1, char *s2, int *matchalign)
 		matchalign[1] = match;
 
 		// Clean up.
-		free_table (&table, n + 1, m + 1);
+		//free_table (&table, n + 1, m + 1);
 		return opt_score;
 	}
 	printf ("Cannot align null string\n");

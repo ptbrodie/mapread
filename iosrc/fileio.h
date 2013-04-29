@@ -26,6 +26,7 @@ void read_parms (const char*);
 void read_fasta (char**, char**, char*, const char*);
 void read_alphabet (char**, const char*);
 FILE *open_file_read (const char*);
+FILE *open_file_write (const char*);
 FILE *get_next_read (char*,char*,FILE*);
 
 
