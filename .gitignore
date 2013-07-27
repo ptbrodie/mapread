@@ -1,0 +1,14 @@
+# Compiled Source #
+
+*.o
+
+# Output Files #
+
+*.txt
+
+# dSYM #
+
+*.dSYM
+*.DS_Store
+*.DS_Store?
+
