@@ -11,6 +11,11 @@
 //             j denotes COL
 // ====================================================================
 
+#define min(X, Y) ((X) < (Y)? (X) : (Y))
+#define max(X, Y) ((X) > (Y)? (X) : (Y))
+#define max4(W, X, Y, Z) (max((max(W, X)),(max(Y, Z))))
+#define sub(a, b) ((a) == (b)? (MATCH) : (MISMATCH))
+
 
 void allocate_table (CELL ***table, int cols, int rows)
 // Allocate an x-cols x y-rows 2D-array in memory to be used as the alignment table.
@@ -42,26 +47,6 @@ void free_table (CELL ***table, int cols, int rows)
 }
 
 
-int min (int x, int y)
-// Return the minimum integer from a set of two integers x and y.
-{
-	return (x < y)? x : y;
-}
-
-
-int max (int x, int y) 
-// Return the maximum integer from a set of two integers x and y.
-{
-	return (x > y)? x : y;
-}
-
-
-int max3 (int x, int y, int z)
-// Return the maximum integer from a set of three integers x, y, z.
-{
-	return max (x, max (y, z));
-}
-
 
 void report_id (double identity) 
 // Report the identity percentage of a local alignment.
@@ -88,7 +73,7 @@ void print_table (CELL **table, int cols, int rows, char *s1, char *s2)
 		else 
 			printf ("%c ", s2[i-1]);
 		for (j = 0; j < cols; ++j) {
-			score = max3 (table[i][j].sub, table[i][j].ins, table[i][j].del);
+			score = max4 (table[i][j].sub, table[i][j].ins, table[i][j].del, 0);
 			printf ("| %4d ", score);
 		}
 		printf("|\n");
@@ -110,6 +95,7 @@ void init_table (CELL ***table, int ilo, int jlo, int cols, int rows, char align
 	(*table)[ilo][jlo].sub = 0;
 	(*table)[ilo][jlo].ins = 0;
 	(*table)[ilo][jlo].del = 0;
+	(*table)[ilo][jlo].score = 0;
 	for (i = ilo + 1; i < rows; ++i) {
 		(*table)[i][jlo].sub = -1 * INF;
 		(*table)[i][jlo].ins = -1 * INF;
@@ -117,6 +103,7 @@ void init_table (CELL ***table, int ilo, int jlo, int cols, int rows, char align
 			(*table)[i][jlo].del = HGAP + i * penalty;
 		else 
 			(*table)[i][jlo].del = 0;
+		(*table)[i][jlo].score = 0;
 	}
 	for (j = jlo + 1; j < cols; ++j) {
 		(*table)[ilo][j].sub = -1 * INF;
@@ -125,6 +112,7 @@ void init_table (CELL ***table, int ilo, int jlo, int cols, int rows, char align
 		else
 			(*table)[ilo][j].ins = 0;
 		(*table)[ilo][j].del = -1 * INF;
+		(*table)[ilo][j].score = 0;
 	}
 	for (i = ilo + 1; i < rows; ++i) {
 		(*table)[i][cols].sub = -1 * INF;
@@ -133,6 +121,7 @@ void init_table (CELL ***table, int ilo, int jlo, int cols, int rows, char align
 			(*table)[i][cols].del = HGAP + i * penalty;
 		else 
 			(*table)[i][cols].del = 0;
+		(*table)[i][cols].score = 0;
 	}
 	for (j = jlo + 1; j < cols; ++j) {
 		(*table)[rows][j].sub = -1 * INF;
@@ -141,33 +130,8 @@ void init_table (CELL ***table, int ilo, int jlo, int cols, int rows, char align
 		else
 			(*table)[rows][j].ins = 0;
 		(*table)[rows][j].del = -1 * INF;
+		(*table)[rows][j].score = 0;
 	}
-}
-
-
-int sub (char ai, char bi)
-// Return the substitution score for character ai and bi.
-{
-	if (ai == bi) 
-		return MATCH;
-	else
-		return MISMATCH;
-}
-
-
-int calc_t (int *type, CELL **table, int i, int j) 
-// Calculate the T value at the ith row, jth col, and store its type (S,I,or D)
-{
-	int sb = table[i][j].sub;
-	int in = table[i][j].ins;
-	int de = table[i][j].del;
-	int maxm = max3 (sb,in,de);
-	
-	if (maxm == de) *type = D;
-	else if (maxm == in) *type = I;
-	else if (maxm == sb) *type = S;
-	else printf ("Error at i=%d j=%d\n", i, j);
-	return maxm;
 }
 
 
@@ -177,7 +141,8 @@ int calc_t_loc (int *type, CELL **table, int i, int j)
 	int sb = table[i][j].sub;
 	int in = table[i][j].ins;
 	int de = table[i][j].del;
-	int maxm = max (max3 (sb,in,de), 0);
+	int maxm;
+	maxm = max4 (sb, in, de, 0);
 	if (maxm == 0) *type = -1;
 	else if (maxm == de) *type = D;
 	else if (maxm == in) *type = I;
@@ -192,22 +157,29 @@ int calculate_table_loc (CELL ***table, int *maxi, int *maxj, char *s1, char *s2
 // Calculate the Dynamic Programming Table for local alignment using affine gap
 // penalty.
 {
-	int i, j, type, maxm = 0, score;
+	int i, j, type, maxm = 0, score = 0;
+	struct timeval start, end;
+	double elapsed;
+	CELL *curr, *up, *diag, *left;
+
 	for (i = ilo + 1; i < ihi; ++i) {
 		for (j = jlo + 1; j < jhi; ++j) {
-			(*table)[i][j].sub = max (calc_t_loc (&type, *table, i-1, j-1) + sub (s1[j-1], s2[i-1]), 0);
-			(*table)[i][j].ins = max (max3 ((*table)[i][j-1].ins + GAP, 
-										(*table)[i][j-1].sub + HGAP + GAP,
-										(*table)[i][j-1].del + HGAP + GAP), 0);
-			(*table)[i][j].del = max (max3 ((*table)[i-1][j].del + GAP, 
-										(*table)[i-1][j].sub + HGAP + GAP,
-										(*table)[i-1][j].ins + HGAP + GAP), 0);
-			score = calc_t_loc (&type, *table, i, j);
-			if (score > maxm) {
-				maxm = score; *maxi = i; *maxj = j;
+            curr = &((*table)[i][j]); up = &((*table)[i-1][j]);
+            diag = &((*table)[i-1][j-1]); left = &((*table)[i][j-1]);
+			curr -> sub = max (diag -> score + sub (s1[j-1], s2[i-1]), 0);
+			curr -> ins = max4 (left -> ins + GAP, 
+								left -> sub + HGAP + GAP,
+								left -> del + HGAP + GAP, 0);
+			curr -> del = max4 (up -> del + GAP, 
+								up -> sub + HGAP + GAP,
+								up -> ins + HGAP + GAP, 0);
+			curr -> score = calc_t_loc (&type, *table, i, j);
+			if (curr -> score > maxm) {
+				maxm = curr -> score; *maxi = i; *maxj = j;
 			}
 		}
 	}
+
 	return maxm;
 }
 
@@ -267,21 +239,20 @@ int align_loc (char *s1, int s1len, char *s2, int *matchalign, CELL ***table)
 	int i, ilo, jlo, ihi, jhi, n, m, opt_score, maxi, maxj, mini, minj;
 	int match, mismatch, gap, hgap;
 	int alignlen;
-	double identity;
+	struct timeval start, end;
+	double identity, elapsed;
 	match = mismatch = gap = hgap = 0;
-	// Cannot align null strings.
+
+	// Do not try to align null strings.
 	if (s1 && s2) {
-		
 		n = s1len, m = strlen (s2);
 		ilo = 0; jlo = 0; ihi = m; jhi = n;
 
-		// Allocate an m+1 by n+1 table.
-		//allocate_table(&table, n + 1, m + 1);
-
 		// Calculate the alignment between s1 and s2
-		init_table (table, ilo, jlo, jhi + 1, ihi + 1, 'l');	
+		init_table (table, ilo, jlo, jhi + 1, ihi + 1, 'l');
+			
 		opt_score = calculate_table_loc (table, &maxi, &maxj, s1, s2, ilo, jlo, ihi + 1, jhi + 1);
-		//print_table (table, n+1, m+1, s1, s2);
+
 		traceback_loc (&match, &mismatch, &gap, &hgap, *table, 
 						maxi, maxj, &mini, &minj, ilo, jlo, s1, s2);
 
@@ -289,8 +260,6 @@ int align_loc (char *s1, int s1len, char *s2, int *matchalign, CELL ***table)
 		matchalign[0] = alignlen;
 		matchalign[1] = match;
 
-		// Clean up.
-		//free_table (&table, n + 1, m + 1);
 		return opt_score;
 	}
 	printf ("Cannot align null string\n");
@@ -318,34 +287,4 @@ int bf_align (char *s1, char *s2) {
 	}
 	return max;
 }
-
-
-
-/*Alignment Type: Local Affine Gap
-
-Scores:   Match:   1, Mismatch:  -1, H:  -5, G:  -1
-
-Sequence 1: "read1", length = 103 characters
-Sequence 2: "Peach_largeContig", length = 5362495 characters
-
-========== Local Alignment 1
-
-s1:712656  CAACTAAAGCCATGAATGTCTAATGATACAAATAAGACAGTACCCGCAGTCTCAAATATT  712715
-           ||||||||||||||||||||| ||||||||||||| ||||||||||||||||||||||||
-s2:     1  CAACTAAAGCCATGAATGTCTCATGATACAAATAAAACAGTACCCGCAGTCTCAAATATT  60
-
-s1:712716  TAGCCTAAGTTGCATAACAAGTTGGCTTCCATAATGAGAGACT  712758
-           ||||||||||||||||| |||||||||||||||||||||||||
-s2:    61  TAGCCTAAGTTGCATAAAAAGTTGGCTTCCATAATGAGAGACT  103
-
-Report: 
-
-Optimal alignment: 97
-
-Number of matches: 100
-Number of mismatches: 3
-Number of gaps: 0
-Number of entry gaps: 0
-Identity Percentage: 97.09
-Coverage Percentage: 100.00*/
 
