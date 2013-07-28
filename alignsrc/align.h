@@ -24,6 +24,7 @@ typedef struct DP_cell {
 	int sub;		// Max score from diagonal adjacent cell
 	int ins;		// Max score from left adjacent cell
 	int del;		// Max score from up adjacent cell
+	int score;
 } CELL;
 
 // Structure to store data about a particular alignment.
